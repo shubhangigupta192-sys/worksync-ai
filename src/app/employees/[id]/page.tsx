@@ -16,8 +16,9 @@ export function generateStaticParams() {
   }));
 }
 
-export default function EmployeeAnalyticsPage({ params }: { params: { id: string } }) {
-  const analytics = getEmployeeAnalytics(params.id);
+export default async function EmployeeAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const analytics = getEmployeeAnalytics(id);
 
   if (!analytics) {
     notFound();
