@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 import { Plus, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+export const dynamic = 'force-dynamic';
+
 export default async function TasksPage() {
   const store = getDemoStore();
   const role = ((await cookies()).get('demo-role')?.value || 'admin') as any;

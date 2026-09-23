@@ -163,6 +163,8 @@ export const demoEmployees: EmployeeWithHistory[] = indianNames.map((name, index
 
   const performance = Number((3.2 + rand() * 1.6).toFixed(1));
 
+  const loc = pick(locations);
+
   return {
     id: `emp-${index + 1}`,
     employee_id: `EMP-${101 + index}`,
@@ -173,7 +175,8 @@ export const demoEmployees: EmployeeWithHistory[] = indianNames.map((name, index
     role,
     status: rand() > 0.1 ? 'active' : 'inactive',
     availability: rand() > 0.8 ? (rand() > 0.5 ? 'on_leave' : 'busy') : 'available',
-    current_location: pick(locations),
+    current_location: loc,
+    location: loc,
     skills,
     performance_score: performance,
     tasks_completed_total: randInt(100, 599),
@@ -261,16 +264,23 @@ export function getEmployeeAnalytics(employeeId: string): EmployeeAnalytics | nu
   const employee = demoEmployees.find(e => e.id === employeeId);
   if (!employee) return null;
 
-  const employeeTasks = demoTasks.filter(t => t.assigned_employee_id === employeeId);
+  // Read from dynamic live store if available so new/updated tasks show immediately
+  const g = globalThis as any;
+  const allTasks: Task[] = (g.__worksyncDemoStore && g.__worksyncDemoStore.tasks)
+    ? g.__worksyncDemoStore.tasks
+    : demoTasks;
+
+  const employeeTasks = allTasks.filter(t => t.assigned_employee_id === employeeId);
   
-  const tasksByStatus = statuses.map(status => ({
+  const workflowStatuses = ['assigned', 'accepted', 'in_progress', 'completed', 'verified', 'closed'];
+  const tasksByStatus = workflowStatuses.map(status => ({
     status,
     count: employeeTasks.filter(t => t.status === status).length
   }));
 
   const tasksByPriority = priorities.map(priority => ({
     priority,
-    count: employeeTasks.filter(t => t.priority === priority).length
+    count: employeeTasks.filter(t => (t.priority || '').toLowerCase() === priority).length
   }));
 
   const leaveSummary = {
@@ -297,7 +307,7 @@ export function getEmployeeAnalytics(employeeId: string): EmployeeAnalytics | nu
     monthlyPerformance: employee.monthly_task_history,
     leaveHistory: employee.leave_history,
     leaveSummary,
-    recentTasks: employeeTasks.slice(0, 5),
+    recentTasks: employeeTasks.slice(0, 20),
     performanceTrend,
     comparisonToAvg: {
       tasksVsAvg: randInt(-10, 9),

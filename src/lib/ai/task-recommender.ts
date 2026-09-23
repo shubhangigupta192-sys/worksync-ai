@@ -10,14 +10,20 @@ const WEIGHTS = {
 
 const CATEGORY_SKILLS: Record<string, string[]> = {
   'maintenance': ['plumbing', 'electrical', 'carpentry', 'hvac', 'maintenance', 'repair'],
-  'cleaning': ['cleaning', 'floor_care', 'sanitization', 'waste_management'],
-  'security': ['surveillance', 'patrol', 'cctv_monitoring', 'access_control', 'security'],
-  'housekeeping': ['room_preparation', 'linen_management', 'housekeeping', 'inventory'],
-  'technical': ['it_support', 'networking', 'hardware', 'software', 'technical'],
+  'cleaning': ['cleaning', 'floor_care', 'sanitization', 'waste_management', 'floor care', 'waste management'],
+  'security': ['surveillance', 'patrol', 'cctv_monitoring', 'access_control', 'security', 'cctv', 'night watch'],
+  'housekeeping': ['room_preparation', 'linen_management', 'housekeeping', 'inventory', 'room prep', 'linen'],
+  'technical': ['it_support', 'networking', 'hardware', 'software', 'technical', 'it support'],
+  'technical support': ['it_support', 'networking', 'hardware', 'software', 'technical', 'it support'],
 };
+
+function normalizeSkill(s: string) {
+  return s.toLowerCase().replace(/[\s_\-]+/g, '');
+}
 
 /**
  * Generates task recommendations by scoring active and available employees.
+ * Heavily factors in workload to maintain equal, balanced task assignment across the workforce.
  */
 export function generateTaskRecommendations(
   task: { category: string; location?: string; priority: string },
@@ -25,7 +31,7 @@ export function generateTaskRecommendations(
   existingTasks: Task[]
 ): TaskRecommendationResult[] {
   const eligibleEmployees = employees.filter(
-    (emp) => emp.status === 'active' && emp.availability === 'available'
+    (emp) => emp.status === 'active' && emp.availability !== 'on_leave'
   );
 
   const results: TaskRecommendationResult[] = eligibleEmployees.map((employee) => {
@@ -42,7 +48,7 @@ export function generateTaskRecommendations(
       WEIGHTS.location * locationMatch.score +
       WEIGHTS.priorityCapacity * priorityCapacity.score;
 
-    const explanation = `Recommended: ${employee.name} (${employee.employee_id}). ${skillMatch.detail}, ${workload.detail.toLowerCase()}, is available at ${employee.location || 'their location'}, and ${priorityCapacity.detail.toLowerCase()}.`;
+    const explanation = `Recommended: ${employee.name} (${employee.role}). ${skillMatch.detail}, balanced team allocation with ${workload.detail.toLowerCase()}, stationed at ${employee.location || (employee as any).current_location || 'site'}, and ${priorityCapacity.detail.toLowerCase()}.`;
 
     return {
       employee,
@@ -58,7 +64,7 @@ export function generateTaskRecommendations(
     };
   });
 
-  return results.sort((a, b) => b.score - a.score).slice(0, 3);
+  return results.sort((a, b) => b.score - a.score).slice(0, 5);
 }
 
 /**
@@ -67,9 +73,9 @@ export function generateTaskRecommendations(
 export function calculateAvailabilityScore(employee: Employee): { score: number; detail: string } {
   switch (employee.availability) {
     case 'available':
-      return { score: 1.0, detail: 'Employee is fully available' };
+      return { score: 1.0, detail: 'Employee is available' };
     case 'busy':
-      return { score: 0.3, detail: 'Employee is currently busy' };
+      return { score: 0.4, detail: 'Employee has active assignments' };
     case 'on_leave':
     default:
       return { score: 0.0, detail: 'Employee is on leave or unavailable' };
@@ -78,6 +84,7 @@ export function calculateAvailabilityScore(employee: Employee): { score: number;
 
 /**
  * Calculates the workload score based on the number of active tasks.
+ * Rewards employees with lower active workloads to enforce equal task management.
  */
 export function calculateWorkloadScore(employeeId: string, allTasks: Task[]): { score: number; detail: string } {
   const activeTasks = allTasks.filter(
@@ -86,12 +93,12 @@ export function calculateWorkloadScore(employeeId: string, allTasks: Task[]): { 
       ['assigned', 'accepted', 'in_progress'].includes(t.status)
   ).length;
 
-  const maxTaskThreshold = 8;
+  const maxTaskThreshold = 6;
   const score = Math.max(0, 1 - activeTasks / maxTaskThreshold);
 
   return {
     score,
-    detail: `Currently has ${activeTasks} active tasks`,
+    detail: activeTasks === 0 ? 'Optimal capacity (0 active tasks)' : `Balanced capacity (${activeTasks} active tasks)`,
   };
 }
 
@@ -99,17 +106,23 @@ export function calculateWorkloadScore(employeeId: string, allTasks: Task[]): { 
  * Calculates the skill match score based on the task category.
  */
 export function calculateSkillScore(employee: Employee, taskCategory: string): { score: number; detail: string } {
-  const requiredSkills = CATEGORY_SKILLS[taskCategory.toLowerCase()] || [];
+  const catKey = (taskCategory || '').toLowerCase().trim();
+  const requiredSkills = CATEGORY_SKILLS[catKey] || [];
   if (requiredSkills.length === 0) {
-    return { score: 0.5, detail: 'No specific skills required for this category' };
+    return { score: 0.6, detail: 'General departmental competency' };
   }
 
-  const matchedSkills = employee.skills.filter((skill) => requiredSkills.includes(skill.toLowerCase()));
-  const score = Math.max(0.1, matchedSkills.length / requiredSkills.length); // minimum 0.1 for active employee
+  const normalizedRequired = requiredSkills.map(normalizeSkill);
+  const matched = (employee.skills || []).filter((s) => {
+    const norm = normalizeSkill(s);
+    return normalizedRequired.some(req => norm.includes(req) || req.includes(norm));
+  });
+
+  const score = matched.length > 0 ? Math.min(1.0, 0.4 + (matched.length / Math.min(requiredSkills.length, 3)) * 0.6) : 0.2;
 
   return {
     score,
-    detail: `Has relevant skills: ${matchedSkills.length > 0 ? matchedSkills.join(', ') : 'general knowledge'}`,
+    detail: matched.length > 0 ? `Matched skills: ${matched.join(', ')}` : 'Department transferable skills',
   };
 }
 
@@ -117,13 +130,14 @@ export function calculateSkillScore(employee: Employee, taskCategory: string): {
  * Calculates the location match score.
  */
 export function calculateLocationScore(employee: Employee, taskLocation?: string): { score: number; detail: string } {
+  const loc = employee.location || (employee as any).current_location;
   if (!taskLocation) {
-    return { score: 0.5, detail: 'No specific location required' };
+    return { score: 0.7, detail: 'Standard facility location' };
   }
-  if (employee.location === taskLocation) {
-    return { score: 1.0, detail: 'Exact location match' };
+  if (loc && loc.toLowerCase().trim() === taskLocation.toLowerCase().trim()) {
+    return { score: 1.0, detail: `Proximity match (${loc})` };
   }
-  return { score: 0.2, detail: 'Different location' };
+  return { score: 0.3, detail: `Stationed at ${loc || 'site'}` };
 }
 
 /**

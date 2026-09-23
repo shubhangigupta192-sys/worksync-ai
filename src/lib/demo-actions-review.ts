@@ -8,9 +8,29 @@ import { generateTaskRecommendations } from '@/lib/ai/task-recommender';
 // review queue. Mirrors src/actions/human-review.ts but on the in-memory store.
 
 export async function demoGetEmployeeOptions() {
-  const { getDemoEmployees } = await import('@/lib/demo-data');
+  const store = getDemoStore();
+  const { getDemoEmployees, getDemoDepartments } = await import('@/lib/demo-data');
+  const depts = getDemoDepartments();
+  const deptMap = Object.fromEntries(depts.map(d => [d.id, d.name]));
+
+  const employees = getDemoEmployees();
   return {
-    data: getDemoEmployees().map((e) => ({ id: e.id, name: `${e.name} (${e.role})` })),
+    data: employees.map((e) => {
+      const activeTasks = store.tasks.filter(
+        (t) => t.assigned_employee_id === e.id && ['assigned', 'accepted', 'in_progress'].includes(t.status)
+      ).length;
+      return {
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        department: deptMap[e.department_id] || e.department_id,
+        activeTasks,
+        availability: e.availability,
+        skills: e.skills,
+        location: e.location || (e as any).current_location,
+        label: `${e.name} (${e.role}) — ${activeTasks} active ${activeTasks === 1 ? 'task' : 'tasks'}`,
+      };
+    }),
   };
 }
 
@@ -23,19 +43,25 @@ export async function demoGetRecommendationsForTask(input: {
   const store = getDemoStore();
   const { getDemoEmployees } = await import('@/lib/demo-data');
   const results = generateTaskRecommendations(
-    { category: input.category.toLowerCase(), location: input.location, priority: input.priority },
+    { category: (input.category || '').toLowerCase(), location: input.location, priority: input.priority },
     getDemoEmployees(),
     store.tasks
   );
   return {
-    data: results.map((r) => ({
-      employeeId: r.employee.id,
-      employeeName: r.employee.name,
-      employeeRole: r.employee.role,
-      score: r.score,
-      explanation: r.explanation,
-      factors: r.factors,
-    })),
+    data: results.map((r) => {
+      const activeTasks = store.tasks.filter(
+        (t) => t.assigned_employee_id === r.employee.id && ['assigned', 'accepted', 'in_progress'].includes(t.status)
+      ).length;
+      return {
+        employeeId: r.employee.id,
+        employeeName: r.employee.name,
+        employeeRole: r.employee.role,
+        activeTasks,
+        score: r.score,
+        explanation: r.explanation,
+        factors: r.factors,
+      };
+    }),
   };
 }
 

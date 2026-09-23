@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Task, UserRole } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Clock, PlayCircle, ClipboardCheck, CheckCircle2, ShieldCheck, FileArchive } from 'lucide-react';
+import { Check, Clock, PlayCircle, ClipboardCheck, CheckCircle2, ShieldCheck, FileArchive, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskWorkflowProps {
@@ -23,77 +24,177 @@ const WORKFLOW_STEPS = [
 ];
 
 export function TaskWorkflow({ task, userRole, onStatusChange }: TaskWorkflowProps) {
-  // onStatusChange is optional so server components can render this stepper
-  // for display-only purposes; interactive updates use TaskStatusUpdater.
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [note, setNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   const currentStepIndex = WORKFLOW_STEPS.findIndex(s => s.id === task.status);
-  
-  // Adjusted for prototype: if status is unassigned, current step is -1
   const activeIndex = currentStepIndex >= 0 ? currentStepIndex : -1;
 
-  const handleAction = (status: string, requireNote: boolean = false) => {
+  const handleAction = async (status: string, requireNote: boolean = false) => {
+    setActionError('');
     if (requireNote) {
       setPendingStatus(status);
       setIsAddingNote(true);
-    } else {
-      onStatusChange?.(task.id, status);
+      return;
     }
+
+    if (onStatusChange) {
+      onStatusChange(task.id, status);
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const { demoUpdateTaskStatus, demoVerifyTask } = await import('@/lib/demo-actions-tasks');
+        const res = status === 'verified'
+          ? await demoVerifyTask(task.id)
+          : await demoUpdateTaskStatus(task.id, status);
+        if (res.error) {
+          setActionError(res.error);
+        } else {
+          router.refresh();
+        }
+      } catch (err: any) {
+        setActionError(err.message || 'Failed to update status');
+      }
+    });
   };
 
-  const submitNote = () => {
-    if (pendingStatus) {
-      onStatusChange?.(task.id, pendingStatus, note);
+  const submitNote = async () => {
+    if (!pendingStatus) return;
+    setActionError('');
+
+    if (onStatusChange) {
+      onStatusChange(task.id, pendingStatus, note);
       setIsAddingNote(false);
       setPendingStatus(null);
       setNote('');
+      return;
     }
+
+    startTransition(async () => {
+      try {
+        const { demoUpdateTaskStatus } = await import('@/lib/demo-actions-tasks');
+        const res = await demoUpdateTaskStatus(task.id, pendingStatus, note);
+        if (res.error) {
+          setActionError(res.error);
+        } else {
+          setIsAddingNote(false);
+          setPendingStatus(null);
+          setNote('');
+          router.refresh();
+        }
+      } catch (err: any) {
+        setActionError(err.message || 'Failed to update status');
+      }
+    });
   };
 
   // Determine allowed actions based on role and current status
   const getAllowedActions = () => {
-    const isEmployee = userRole === 'employee';
-    const isManager = userRole === 'supervisor' || userRole === 'admin';
-
     switch (task.status) {
       case 'assigned':
-        return isEmployee || isManager ? (
-          <Button onClick={() => handleAction('accepted')} className="w-full sm:w-auto">Accept Task</Button>
-        ) : null;
-      
-      case 'accepted':
-        return isEmployee || isManager ? (
-          <Button onClick={() => handleAction('in_progress')} className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700">Start Work</Button>
-        ) : null;
-        
-      case 'in_progress':
-        return isEmployee || isManager ? (
-          <Button onClick={() => handleAction('completed', true)} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700">
-            <CheckCircle2 className="w-4 h-4 mr-2" /> Complete Task
+        return (
+          <Button
+            onClick={() => handleAction('accepted')}
+            disabled={isPending}
+            className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold shadow-md shadow-emerald-500/20 px-5 py-2.5"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+            )}
+            👷 Frontline Worker: Accept Task
           </Button>
-        ) : null;
-        
+        );
+
+      case 'accepted':
+        return (
+          <Button
+            onClick={() => handleAction('in_progress')}
+            disabled={isPending}
+            className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-extrabold shadow-md shadow-amber-500/20 px-5 py-2.5"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <PlayCircle className="w-4 h-4 mr-2" />
+            )}
+            ▶ Start Work (Move to In Progress)
+          </Button>
+        );
+
+      case 'in_progress':
+        return (
+          <Button
+            onClick={() => handleAction('completed', true)}
+            disabled={isPending}
+            className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold shadow-md shadow-emerald-500/20 px-5 py-2.5"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <ClipboardCheck className="w-4 h-4 mr-2" />
+            )}
+            ✔ Complete Task & Submit Notes
+          </Button>
+        );
+
       case 'completed':
-        return isManager ? (
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button onClick={() => handleAction('verified', true)} className="bg-indigo-600 hover:bg-indigo-700">
-              Verify Quality
+        return (
+          <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+            <Button
+              onClick={() => handleAction('verified')}
+              disabled={isPending}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold shadow-md shadow-indigo-500/20 px-5 py-2.5"
+            >
+              {isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-4 h-4 mr-2" />
+              )}
+              🛡️ Supervisor: Verify Quality
             </Button>
-            <Button onClick={() => handleAction('in_progress', true)} variant="outline" className="text-rose-600 border-rose-200 hover:bg-rose-50">
-              Reject (Needs Rework)
+            <Button
+              onClick={() => handleAction('in_progress', true)}
+              disabled={isPending}
+              variant="outline"
+              className="text-rose-600 border-rose-300 hover:bg-rose-50 font-bold"
+            >
+              Request Rework
             </Button>
           </div>
-        ) : (
-          <div className="text-sm text-slate-500 italic">Waiting for supervisor verification</div>
         );
-        
+
       case 'verified':
-        return isManager ? (
-          <Button onClick={() => handleAction('closed')} variant="secondary">Close Task</Button>
-        ) : null;
-        
+        return (
+          <Button
+            onClick={() => handleAction('closed')}
+            disabled={isPending}
+            className="bg-slate-800 hover:bg-slate-700 text-white font-extrabold px-5 py-2.5"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <FileArchive className="w-4 h-4 mr-2" />
+            )}
+            📁 Archive & Close Task
+          </Button>
+        );
+
+      case 'closed':
+        return (
+          <div className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-3.5 py-1.5 rounded-full border border-emerald-300">
+            <Check className="w-4 h-4" />
+            Task Lifecycle Complete & Verified
+          </div>
+        );
+
       default:
         return null;
     }
@@ -156,12 +257,22 @@ export function TaskWorkflow({ task, userRole, onStatusChange }: TaskWorkflowPro
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsAddingNote(false)}>Cancel</Button>
-              <Button onClick={submitNote}>Submit & Update Status</Button>
+              <Button onClick={submitNote} disabled={isPending}>
+                {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Submit & Update Status
+              </Button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center sm:justify-start">
-            {getAllowedActions()}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center justify-center sm:justify-start">
+              {getAllowedActions()}
+            </div>
+            {actionError && (
+              <p className="text-xs font-bold text-rose-600 dark:text-rose-400 mt-2">
+                ⚠️ {actionError}
+              </p>
+            )}
           </div>
         )}
       </div>

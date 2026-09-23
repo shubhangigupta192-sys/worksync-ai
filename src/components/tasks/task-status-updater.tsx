@@ -11,23 +11,23 @@ import { Loader2 } from 'lucide-react';
 
 const ACTIONS: Record<string, Record<string, { label: string; next: string; note?: boolean }[]>> = {
   employee: {
-    assigned: [{ label: 'Accept Task', next: 'accepted' }],
-    accepted: [{ label: 'Start Task', next: 'in_progress' }],
-    in_progress: [{ label: 'Mark Completed (with notes)', next: 'completed', note: true }],
+    assigned: [{ label: '👷 Accept Task (Frontline Worker)', next: 'accepted' }],
+    accepted: [{ label: '▶ Start Work (In Progress)', next: 'in_progress' }],
+    in_progress: [{ label: '✔ Mark Completed (Add Notes)', next: 'completed', note: true }],
   },
   supervisor: {
-    assigned: [{ label: 'Mark Accepted', next: 'accepted' }],
-    accepted: [{ label: 'Start Task', next: 'in_progress' }],
-    in_progress: [{ label: 'Mark Completed', next: 'completed', note: true }],
-    completed: [{ label: 'Verify Completion', next: 'verified' }],
-    verified: [{ label: 'Close Task', next: 'closed' }],
+    assigned: [{ label: '👷 Accept Task (Frontline Worker)', next: 'accepted' }],
+    accepted: [{ label: '▶ Start Work (In Progress)', next: 'in_progress' }],
+    in_progress: [{ label: '✔ Mark Completed', next: 'completed', note: true }],
+    completed: [{ label: '🛡️ Verify Completion (Supervisor)', next: 'verified' }],
+    verified: [{ label: '📁 Close & Archive Task', next: 'closed' }],
   },
   admin: {
-    assigned: [{ label: 'Mark Accepted', next: 'accepted' }],
-    accepted: [{ label: 'Start Task', next: 'in_progress' }],
-    in_progress: [{ label: 'Mark Completed', next: 'completed', note: true }],
-    completed: [{ label: 'Verify Completion', next: 'verified' }],
-    verified: [{ label: 'Close Task', next: 'closed' }],
+    assigned: [{ label: '👷 Accept Task (Frontline Worker)', next: 'accepted' }],
+    accepted: [{ label: '▶ Start Work (In Progress)', next: 'in_progress' }],
+    in_progress: [{ label: '✔ Mark Completed', next: 'completed', note: true }],
+    completed: [{ label: '🛡️ Verify Completion (Supervisor)', next: 'verified' }],
+    verified: [{ label: '📁 Close & Archive Task', next: 'closed' }],
   },
 };
 

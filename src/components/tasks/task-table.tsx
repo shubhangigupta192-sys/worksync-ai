@@ -11,6 +11,7 @@ import { Search, Eye, AlertCircle, ArrowUpRight, CheckCircle2 } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { format, isPast, parseISO } from 'date-fns';
 import Link from 'next/link';
+import { getDemoEmployees } from '@/lib/demo-data';
 
 interface TaskTableProps {
   tasks: Task[];
@@ -21,6 +22,11 @@ interface TaskTableProps {
 export function TaskTable({ tasks, userRole, onView }: TaskTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const allEmployees = React.useMemo(() => getDemoEmployees(), []);
+  const employeeMap = React.useMemo(() => {
+    return Object.fromEntries(allEmployees.map(e => [e.id, e]));
+  }, [allEmployees]);
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
@@ -178,10 +184,15 @@ export function TaskTable({ tasks, userRole, onView }: TaskTableProps) {
 
                     <TableCell>
                       {task.assigned_employee_id ? (
-                        <div className="flex items-center gap-1.5 font-bold text-sm text-foreground">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          <span>Staff #{task.assigned_employee_id.replace('emp-', '')}</span>
-                        </div>
+                        <Link
+                          href={`/employees/${task.assigned_employee_id}`}
+                          className="flex items-center gap-1.5 font-bold text-sm text-foreground hover:text-indigo-600 transition-colors group"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate max-w-[150px] group-hover:underline">
+                            {employeeMap[task.assigned_employee_id]?.name || `Staff #${task.assigned_employee_id.replace('emp-', '')}`}
+                          </span>
+                        </Link>
                       ) : (
                         <span className="text-xs text-muted-foreground font-semibold italic">
                           Awaiting Match
