@@ -11,18 +11,23 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'system',
+  theme: 'light',
   setTheme: () => {},
   resolvedTheme: 'light',
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
+  const [theme, setThemeState] = useState<Theme>('light');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored) setThemeState(stored);
+    if (stored) {
+      setThemeState(stored);
+    } else {
+      // Default to crisp, high-contrast light mode
+      setThemeState('light');
+    }
   }, []);
 
   useEffect(() => {

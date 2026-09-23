@@ -31,18 +31,18 @@ export default function EmployeesPage() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-border/60">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
-          <p className="text-muted-foreground">Manage your workforce and view performance analytics.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Workforce Directory</h1>
+          <p className="text-sm font-medium text-muted-foreground mt-1">Manage personnel, review skills matrices, and inspect performance analytics.</p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Directory</CardTitle>
-          <CardDescription>Browse all {employees.length} employees</CardDescription>
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-3 border-b border-border/40">
+          <CardTitle className="text-lg font-bold text-foreground">Personnel Matrix</CardTitle>
+          <CardDescription className="font-medium text-xs">All {employees.length} registered frontline and technical staff</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">

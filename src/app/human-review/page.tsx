@@ -15,33 +15,49 @@ export default async function HumanReviewPage() {
   const recentDecisions = store.decisions.slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
-        <p className="text-amber-800 font-medium flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5" />
-          Human-in-the-Loop Governance: AI recommends — humans approve, modify, or reject. Every decision is logged.
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="pb-4 border-b border-border/60">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+            <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+            Decision Governance Active
+          </span>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+          Human-in-the-Loop Review Queue
+        </h1>
+        <p className="text-sm font-medium text-muted-foreground mt-1">
+          Supervisory Governance: AI suggests optimal allocations — verified human supervisors retain final authority.
+        </p>
+      </div>
+
+      <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-xl border border-amber-500/20">
+        <p className="text-amber-900 dark:text-amber-200 text-sm font-semibold flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          Responsible AI Principle: All task recommendations require human approval before field dispatch. Every decision and override is cryptographically logged.
         </p>
       </div>
 
       {!canReview && (
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">
-            You are logged in as a frontline employee demo user. The review queue is for supervisors and HR.
-            Sign out and use the Supervisor or Admin demo login to review recommendations.
+        <Card className="p-4 border-border bg-card">
+          <p className="text-sm font-medium text-muted-foreground">
+            You are logged in as a frontline staff member. The review queue is reserved for Supervisors and HR Administrators.
           </p>
         </Card>
       )}
 
+      {/* Pending Recommendations */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-semibold text-gray-900">Pending Recommendations</h2>
-          <Badge variant="secondary">{pendingRecs.length}</Badge>
+          <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-xl font-bold text-foreground">Pending Workforce Recommendations</h2>
+          <Badge className="bg-indigo-600 text-white font-bold">{pendingRecs.length}</Badge>
         </div>
 
         {pendingRecs.length === 0 ? (
-          <Card className="p-6 text-center text-gray-500">
-            No items pending human review. Create a task with an AI recommendation to populate the queue.
+          <Card className="p-8 text-center text-muted-foreground font-medium border-dashed">
+            All pending recommendations have been reviewed and approved. Create a new task to generate matching recommendations.
           </Card>
         ) : (
           <div className="grid gap-4">
@@ -65,50 +81,51 @@ export default async function HumanReviewPage() {
         )}
       </section>
 
+      {/* Operational Insights */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-amber-500" />
-          <h2 className="text-xl font-semibold text-gray-900">AI Workforce Insights</h2>
-          <Badge variant="secondary">{activeInsights.length}</Badge>
+          <h2 className="text-xl font-bold text-foreground">Operational Insights & Pattern Alerts</h2>
+          <Badge className="bg-amber-600 text-white font-bold">{activeInsights.length}</Badge>
         </div>
 
         {activeInsights.length === 0 ? (
-          <Card className="p-6 text-center text-gray-500">All insights have been reviewed.</Card>
+          <Card className="p-6 text-center text-muted-foreground font-medium border-dashed">
+            No active operational anomalies detected.
+          </Card>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             {activeInsights.map((insight) => (
-              <InsightActionPanel
-                key={insight.id}
-                insight={{
-                  id: insight.id,
-                  title: insight.title,
-                  description: insight.description,
-                  severity: insight.severity,
-                  category: insight.category,
-                }}
-                canReview={canReview}
-              />
+              <InsightActionPanel key={insight.id} insight={insight} canReview={canReview} />
             ))}
           </div>
         )}
       </section>
 
+      {/* Recent Decisions Audit */}
       {recentDecisions.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Human Decisions</h2>
-          <Card>
-            <CardContent className="divide-y">
-              {recentDecisions.map((d) => (
-                <div key={d.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold text-foreground">Recent Governance Decisions</h2>
+          <div className="space-y-2">
+            {recentDecisions.map((dec) => (
+              <Card key={dec.id} className="p-4 border-border bg-card">
+                <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-sm font-medium capitalize">{d.decision}</span>
-                    <span className="text-sm text-gray-500"> — {d.decision_reason}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-foreground capitalize">{dec.decision}</span>
+                      <span className="text-xs text-muted-foreground">by Supervisor #{dec.decision_by.substring(0, 6)}</span>
+                    </div>
+                    {dec.decision_reason && (
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">{dec.decision_reason}</p>
+                    )}
                   </div>
-                  <span className="text-xs text-gray-400">{new Date(d.created_at).toLocaleString()}</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    {new Date(dec.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </Card>
+            ))}
+          </div>
         </section>
       )}
     </div>
