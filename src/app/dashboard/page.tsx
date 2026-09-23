@@ -18,13 +18,15 @@ import {
   Activity,
   Layers,
 } from 'lucide-react';
-import { getDemoDashboardStats, getDemoStatusData, getDemoWorkloadData } from '@/lib/demo-analytics';
-import { getDemoStore } from '@/lib/demo-store';
+import { getDemoDashboardStats, getDemoStatusData, getDemoWorkloadData, getDemoOnTimeClosureRate } from '@/lib/demo-analytics';
+import { getDemoStore, getDemoActor } from '@/lib/demo-store';
 
 export default async function DashboardPage() {
   // Live numbers computed from the demo store (real rule-based data).
   // Overridden by Supabase results only when a database is configured.
   const stats = getDemoDashboardStats();
+  const actor = await getDemoActor();
+  const isStaff = actor.role === 'admin' || actor.role === 'supervisor';
   let statusData = getDemoStatusData();
   let workloadData = getDemoWorkloadData();
 
@@ -41,11 +43,25 @@ export default async function DashboardPage() {
     // Demo mode: keep store-derived data
   }
 
-  // Live task feed from the demo store (real data, newest first)
+  // Live task feed from the demo store (real data, newest first).
+  // Employees see only their own tasks, matching the role-based access model.
   const allTasks = getDemoStore().tasks;
-  const liveTasks = [...allTasks]
+  const visibleTasks = isStaff ? allTasks : allTasks.filter((t) => t.assigned_employee_id === 'emp-7');
+  const liveTasks = [...visibleTasks]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
+
+  // Personal metrics for frontline employees (scoped to their own tasks)
+  const isActive = (t: (typeof visibleTasks)[number]) => ['assigned', 'accepted', 'in_progress'].includes(t.status);
+  const myOpen = visibleTasks.filter(isActive).length;
+  const myCompleted = visibleTasks.filter((t) => ['completed', 'verified', 'closed'].includes(t.status)).length;
+  const myOverdue = visibleTasks.filter((t) => t.due_date && isActive(t) && new Date(t.due_date).getTime() < Date.now()).length;
+  const myNextDue = visibleTasks
+    .filter((t) => t.due_date && isActive(t))
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0];
+  const myStatusData = (['assigned', 'accepted', 'in_progress', 'completed', 'verified', 'closed'] as const)
+    .map((s) => ({ status: s, count: visibleTasks.filter((t) => t.status === s).length }))
+    .filter((d) => d.count > 0);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10">
@@ -70,7 +86,7 @@ export default async function DashboardPage() {
 
         {/* Quick Launch Buttons */}
         <div className="flex items-center gap-3">
-          <Link href="/human-review">
+          {isStaff && (<Link href="/human-review">
             <Button variant="outline" size="sm" className="border-indigo-500/30 hover:bg-indigo-500/10 text-foreground">
               <ShieldCheck className="w-4 h-4 mr-1.5 text-indigo-500" />
               Human Review Queue
@@ -78,14 +94,14 @@ export default async function DashboardPage() {
                 2 Pending
               </span>
             </Button>
-          </Link>
+          </Link>)}
 
-          <Link href="/tasks/new">
+          {isStaff && (<Link href="/tasks/new">
             <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-500/20 font-medium">
               <Plus className="w-4 h-4 mr-1.5" />
               Create New Task
             </Button>
-          </Link>
+          </Link>)}
         </div>
       </div>
 
@@ -100,8 +116,8 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* Card 1: Create Task */}
-          <Link href="/tasks/new" className="group block">
+          {/* Card 1: Create Task (staff only) */}
+          {isStaff && (<Link href="/tasks/new" className="group block">
             <Card className="p-5 h-full border-border/60 hover:border-indigo-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200">
               <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
                 <Plus className="w-5 h-5" />
@@ -117,7 +133,7 @@ export default async function DashboardPage() {
                 Launch Task Creator →
               </div>
             </Card>
-          </Link>
+          </Link>)}
 
           {/* Card 2: Live Tasks */}
           <Link href="/tasks" className="group block">
@@ -138,8 +154,8 @@ export default async function DashboardPage() {
             </Card>
           </Link>
 
-          {/* Card 3: Human Review */}
-          <Link href="/human-review" className="group block">
+          {/* Card 3: Human Review (staff only) */}
+          {isStaff && (<Link href="/human-review" className="group block">
             <Card className="p-5 h-full border-border/60 hover:border-amber-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
               <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-5 h-5" />
@@ -155,10 +171,10 @@ export default async function DashboardPage() {
                 Review Recommendations →
               </div>
             </Card>
-          </Link>
+          </Link>)}
 
-          {/* Card 4: Workforce */}
-          <Link href="/employees" className="group block">
+          {/* Card 4: Workforce (staff only) */}
+          {isStaff && (<Link href="/employees" className="group block">
             <Card className="p-5 h-full border-border/60 hover:border-emerald-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-200">
               <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
                 <Users className="w-5 h-5" />
@@ -168,17 +184,19 @@ export default async function DashboardPage() {
                 <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-emerald-500" />
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                30 verified personnel across Housekeeping, Security, Maintenance & Technical.
+                {stats.totalEmployees} verified personnel across Housekeeping, Security, Maintenance & Technical.
               </p>
               <div className="mt-3.5 pt-3 border-t border-border/40 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
                 Explore Personnel →
               </div>
             </Card>
-          </Link>
+          </Link>)}
 
         </div>
       </div>
 
+      {isStaff ? (
+      <>
       {/* 3. Minimal, High-Impact KPI Row (4 Clean Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
@@ -196,7 +214,7 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            87% Operational Deployment Rate
+            {Math.round((stats.activeEmployees / Math.max(1, stats.totalEmployees)) * 100)}% Operational Deployment Rate
           </div>
         </Card>
 
@@ -227,7 +245,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-foreground">94.2%</span>
+            <span className="text-3xl font-extrabold text-foreground">{getDemoOnTimeClosureRate()}%</span>
             <span className="text-sm text-muted-foreground font-medium">on-time closure</span>
           </div>
           <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
@@ -261,6 +279,34 @@ export default async function DashboardPage() {
         <TaskStatusChart data={statusData} />
         <WorkloadChart data={workloadData} />
       </div>
+      </>
+      ) : (
+      <>
+      {/* Employee personal summary — scoped to own tasks only */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">My Open Tasks</span>
+          <div className="mt-3 text-3xl font-extrabold text-foreground">{myOpen}</div>
+          <div className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 font-medium">{myOverdue} overdue</div>
+        </Card>
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">My Completed</span>
+          <div className="mt-3 text-3xl font-extrabold text-foreground">{myCompleted}</div>
+          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium">completed, verified & closed</div>
+        </Card>
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next Due</span>
+          <div className="mt-3 text-base font-bold text-foreground">
+            {myNextDue
+              ? `${myNextDue.task_id} · ${new Date(myNextDue.due_date!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+              : 'Nothing pending'}
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground font-medium">{myNextDue ? myNextDue.title : 'All caught up'}</div>
+        </Card>
+      </div>
+      <TaskStatusChart data={myStatusData} />
+      </>
+      )}
 
       {/* 5. Live Operations Stream (What is Going on Currently) */}
       <Card className="p-6 border-border/60 bg-card/60 backdrop-blur-sm">
@@ -275,7 +321,7 @@ export default async function DashboardPage() {
           </div>
           <Link href="/tasks">
             <Button variant="ghost" size="sm" className="text-xs font-medium text-indigo-500 hover:text-indigo-600">
-              View All Tasks ({allTasks.length}) →
+              View All Tasks ({visibleTasks.length}) →
             </Button>
           </Link>
         </div>

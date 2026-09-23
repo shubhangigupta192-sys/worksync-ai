@@ -92,6 +92,17 @@ export function getDemoWorkloadData(): DemoWorkloadDatum[] {
     .slice(0, 10);
 }
 
+/** On-time closure rate: completed/verified/closed tasks finished on or before their due date. */
+export function getDemoOnTimeClosureRate(): number {
+  const { tasks } = getDemoStore();
+  const done = tasks.filter((t) => ['completed', 'verified', 'closed'].includes(t.status));
+  if (done.length === 0) return 100;
+  const onTime = done.filter(
+    (t) => !t.due_date || new Date(t.updated_at).getTime() <= new Date(t.due_date).getTime()
+  ).length;
+  return Math.round((onTime / done.length) * 100);
+}
+
 /** Area chart data: tasks created vs completed per day over the last 14 days, from real task timestamps. */
 export function getDemoTrendData(days = 14): { date: string; completed: number; assigned: number }[] {
   const { tasks } = getDemoStore();
