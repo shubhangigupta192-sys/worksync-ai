@@ -32,9 +32,9 @@ export default function EmployeesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-border/60">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border/60">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Workforce Directory</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Workforce Directory</h1>
           <p className="text-sm font-medium text-muted-foreground mt-1">Manage personnel, review skills matrices, and inspect performance analytics.</p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function EmployeesPage() {
             </div>
             <div className="flex gap-2">
               <Select value={deptFilter} onValueChange={(v: string | null) => setDeptFilter(v ?? 'all')}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[170px] flex-1">
                   <SelectValue placeholder="Department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -70,7 +70,7 @@ export default function EmployeesPage() {
               </Select>
               
               <Select value={statusFilter} onValueChange={(v: string | null) => setStatusFilter(v ?? 'all')}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[150px] flex-1">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -82,8 +82,8 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>

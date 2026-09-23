@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Geist } from 'next/font/google';
 import './globals.css';
 import { createClient } from '@/lib/supabase/server';
-import { Sidebar } from '@/components/layout/sidebar';
-import { Header } from '@/components/layout/header';
+import { AppShell } from '@/components/layout/app-shell';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AIChatbot } from '@/components/ai-chatbot';
 import { cn } from '@/lib/utils';
@@ -91,16 +90,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={cn(inter.className, 'antialiased')}>
         <ThemeProvider>
           {profile ? (
-            <div className="flex h-screen">
-              <Sidebar role={profile.role} />
-              <div className="flex-1 flex flex-col overflow-hidden ml-64">
-                <Header user={profile} pageTitle="" />
-                <main className="flex-1 overflow-y-auto bg-background p-6">
-                  {children}
-                </main>
-              </div>
+            <>
+              <AppShell role={profile.role} user={profile}>
+                {children}
+              </AppShell>
               <AIChatbot />
-            </div>
+            </>
           ) : (
             <main className="min-h-screen">
               {children}

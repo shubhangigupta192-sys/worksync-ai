@@ -81,8 +81,8 @@ export function AuditTable({ logs }: AuditTableProps) {
         </div>
       </div>
 
-      <div className="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
-        <Table>
+      <div className="bg-white rounded-md border border-slate-200 shadow-sm overflow-x-auto">
+        <Table className="min-w-[720px]">
           <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead className="font-semibold text-slate-700 w-[180px]">Timestamp</TableHead>

@@ -19,11 +19,13 @@ import {
 import { UserRole } from '@/lib/types';
 import { NAV_ITEMS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   role: UserRole;
-  currentPath?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -39,12 +41,13 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Settings,
 };
 
-export function Sidebar({ role }: SidebarProps) {
+// Shared brand block + nav links so the desktop rail and mobile drawer stay identical.
+function SidebarBody({ role, onNavigate }: { role: UserRole; onNavigate?: () => void }) {
   const pathname = usePathname();
   const items = NAV_ITEMS[role] || [];
 
   return (
-    <div className="flex flex-col w-64 h-full fixed left-0 top-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border z-40">
+    <div className="flex flex-col h-full w-64 bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
@@ -73,6 +76,7 @@ export function Sidebar({ role }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                 isActive
@@ -109,5 +113,35 @@ export function Sidebar({ role }: SidebarProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export function Sidebar({ role, open, onOpenChange }: SidebarProps) {
+  const pathname = usePathname();
+
+  // Close the drawer after any in-app navigation so it never lingers.
+  React.useEffect(() => {
+    onOpenChange(false);
+  }, [pathname]);
+
+  return (
+    <>
+      {/* Desktop rail — hidden below lg */}
+      <aside className="hidden lg:block fixed left-0 top-0 h-full w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground z-40">
+        <SidebarBody role={role} />
+      </aside>
+
+      {/* Mobile drawer — controlled by AppShell; trigger is the header hamburger */}
+      <div className="lg:hidden">
+        <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent side="left" className="p-0 w-72 max-w-[85vw] gap-0" showCloseButton={false}>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation</SheetTitle>
+            </SheetHeader>
+            <SidebarBody role={role} onNavigate={() => onOpenChange(false)} />
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   );
 }
