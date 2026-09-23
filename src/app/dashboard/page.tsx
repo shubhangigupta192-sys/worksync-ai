@@ -27,6 +27,7 @@ export default async function DashboardPage() {
   const stats = getDemoDashboardStats();
   const actor = await getDemoActor();
   const isStaff = actor.role === 'admin' || actor.role === 'supervisor';
+  const isAdmin = actor.role === 'admin';
   let statusData = getDemoStatusData();
   let workloadData = getDemoWorkloadData();
 
@@ -86,7 +87,7 @@ export default async function DashboardPage() {
 
         {/* Quick Launch Buttons */}
         <div className="flex items-center gap-3">
-          {isStaff && (<Link href="/human-review">
+          {isAdmin && (<Link href="/human-review">
             <Button variant="outline" size="sm" className="border-indigo-500/30 hover:bg-indigo-500/10 text-foreground">
               <ShieldCheck className="w-4 h-4 mr-1.5 text-indigo-500" />
               Human Review Queue
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
             </Button>
           </Link>)}
 
-          {isStaff && (<Link href="/tasks/new">
+          {isAdmin && (<Link href="/tasks/new">
             <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-500/20 font-medium">
               <Plus className="w-4 h-4 mr-1.5" />
               Create New Task
@@ -116,8 +117,8 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* Card 1: Create Task (staff only) */}
-          {isStaff && (<Link href="/tasks/new" className="group block">
+          {/* Card 1: Create Task (HR Admin only) */}
+          {isAdmin && (<Link href="/tasks/new" className="group block">
             <Card className="p-5 h-full border-border/60 hover:border-indigo-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200">
               <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
                 <Plus className="w-5 h-5" />
@@ -154,8 +155,8 @@ export default async function DashboardPage() {
             </Card>
           </Link>
 
-          {/* Card 3: Human Review (staff only) */}
-          {isStaff && (<Link href="/human-review" className="group block">
+          {/* Card 3: Human Review (HR Admin only) */}
+          {isAdmin && (<Link href="/human-review" className="group block">
             <Card className="p-5 h-full border-border/60 hover:border-amber-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
               <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-5 h-5" />

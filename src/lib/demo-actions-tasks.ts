@@ -17,6 +17,10 @@ export async function demoCreateTask(input: {
 }): Promise<{ data?: Task; error?: string }> {
   const store = getDemoStore();
   const actor = await getDemoActor();
+  // Governance policy: task creation & assignment is an HR-Admin function.
+  if (actor.role !== 'admin') {
+    return { error: 'Forbidden: only HR Admin can create and assign tasks' };
+  }
   const now = new Date().toISOString();
   const nextNum = store.tasks.length + 1;
 

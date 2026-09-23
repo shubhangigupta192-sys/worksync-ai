@@ -97,7 +97,6 @@ export const NAV_ITEMS = {
     { label: 'Task Operations', href: '/tasks', icon: 'ClipboardList' },
     { label: 'Workforce Directory', href: '/employees', icon: 'Users' },
     { label: 'AI Task Matching', href: '/recommendations', icon: 'Brain' },
-    { label: 'Human Review Queue', href: '/human-review', icon: 'ShieldCheck' },
     { label: 'Workforce Analytics', href: '/analytics', icon: 'BarChart3' },
     { label: 'System Architecture', href: '/research-framework', icon: 'GraduationCap' },
     { label: 'Settings', href: '/settings', icon: 'Settings' },

@@ -9,7 +9,9 @@ export default async function HumanReviewPage() {
   const store = getDemoStore();
   const actor = await getDemoActor();
 
-  const canReview = actor.role === 'admin' || actor.role === 'supervisor';
+  // Governance policy: the review queue is HR-Admin territory. Supervisors
+  // execute and verify field work; HR Admin holds final decision authority.
+  const canReview = actor.role === 'admin';
   const pendingRecs = store.recommendations.filter((r) => r.status === 'pending');
   const activeInsights = store.insights.filter((i) => i.status === 'active');
   const recentDecisions = store.decisions.slice(0, 5);
@@ -40,9 +42,12 @@ export default async function HumanReviewPage() {
       </div>
 
       {!canReview && (
-        <Card className="p-4 border-border bg-card">
-          <p className="text-sm font-medium text-muted-foreground">
-            You are logged in as a frontline staff member. The review queue is reserved for Supervisors and HR Administrators.
+        <Card className="p-6 border-amber-500/30 bg-amber-500/5">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            {actor.role === 'supervisor'
+              ? 'Restricted: task review and assignment authority rests with HR Administration. You can view the queue in read-only mode.'
+              : 'You are logged in as a frontline staff member. The review queue is reserved for HR Administrators.'}
           </p>
         </Card>
       )}

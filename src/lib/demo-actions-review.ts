@@ -85,6 +85,7 @@ export async function demoRecordPendingRecommendation(input: {
 export async function demoApproveRecommendation(id: string, reason?: string) {
   const store = getDemoStore();
   const actor = await getDemoActor();
+  if (actor.role !== 'admin') return { error: 'Forbidden: only HR Admin can approve recommendations' };
   const rec = store.recommendations.find((r) => r.id === id);
   if (!rec) return { error: 'Recommendation not found' };
 
@@ -124,6 +125,7 @@ export async function demoApproveRecommendation(id: string, reason?: string) {
 export async function demoModifyRecommendation(id: string, newEmployeeId: string, newEmployeeName: string, reason: string) {
   const store = getDemoStore();
   const actor = await getDemoActor();
+  if (actor.role !== 'admin') return { error: 'Forbidden: only HR Admin can modify recommendations' };
   const rec = store.recommendations.find((r) => r.id === id);
   if (!rec) return { error: 'Recommendation not found' };
 
@@ -163,6 +165,7 @@ export async function demoModifyRecommendation(id: string, newEmployeeId: string
 export async function demoRejectRecommendation(id: string, reason: string) {
   const store = getDemoStore();
   const actor = await getDemoActor();
+  if (actor.role !== 'admin') return { error: 'Forbidden: only HR Admin can reject recommendations' };
   const rec = store.recommendations.find((r) => r.id === id);
   if (!rec) return { error: 'Recommendation not found' };
 
@@ -194,6 +197,7 @@ export async function demoRejectRecommendation(id: string, reason: string) {
 export async function demoAcknowledgeInsight(id: string, action: 'resolved' | 'acknowledged', reason?: string) {
   const store = getDemoStore();
   const actor = await getDemoActor();
+  if (actor.role !== 'admin') return { error: 'Forbidden: only HR Admin can resolve insights' };
   const insight = store.insights.find((i) => i.id === id);
   if (!insight) return { error: 'Insight not found' };
 
