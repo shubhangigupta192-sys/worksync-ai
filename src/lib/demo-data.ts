@@ -189,8 +189,8 @@ export const demoEmployees: EmployeeWithHistory[] = indianNames.map((name, index
   };
 });
 
-// Tasks
-const statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+// Tasks — statuses follow the six-state frontline workflow defined in types.ts
+const statuses = ['assigned', 'accepted', 'in_progress', 'completed', 'verified', 'closed'];
 const priorities = ['low', 'medium', 'high', 'urgent'];
 
 // Fixed reference date so demo tasks are deterministic across server/client and reloads.

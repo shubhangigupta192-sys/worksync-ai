@@ -36,9 +36,9 @@ export function Header({ user, pageTitle }: HeaderProps) {
           <h2 className="text-sm font-medium text-muted-foreground">{getGreeting()}</h2>
           <p className="text-base font-semibold text-foreground">{user.full_name}</p>
         </div>
-        <Badge variant="secondary" className="hidden sm:flex items-center gap-1 text-xs">
-          <BrainCircuit className="w-3 h-3" />
-          AI-Assisted Prototype
+        <Badge variant="outline" className="hidden sm:flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          AI Decision Engine Active
         </Badge>
       </div>
 

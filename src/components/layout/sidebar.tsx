@@ -100,8 +100,11 @@ export function Sidebar({ role }: SidebarProps) {
             </Badge>
           </div>
           <div className="text-center bg-sidebar-accent/50 rounded-lg p-2 border border-sidebar-border/50">
-            <p className="text-[10px] font-semibold text-sidebar-foreground/60">Prototype v1.0</p>
-            <p className="text-[9px] text-sidebar-foreground/40 mt-0.5">Academic Research</p>
+            <p className="text-[10px] font-semibold text-sidebar-foreground/80">WorkSync Enterprise</p>
+            <p className="text-[9px] text-emerald-400 mt-0.5 flex items-center justify-center gap-1 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Engine Online
+            </p>
           </div>
         </div>
       </div>

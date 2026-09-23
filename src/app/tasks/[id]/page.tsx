@@ -53,7 +53,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      <TaskWorkflow task={task} userRole={actor.role as any} onStatusChange={() => {}} />
+      <TaskWorkflow task={task} userRole={actor.role as any} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">

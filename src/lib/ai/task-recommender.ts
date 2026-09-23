@@ -42,7 +42,7 @@ export function generateTaskRecommendations(
       WEIGHTS.location * locationMatch.score +
       WEIGHTS.priorityCapacity * priorityCapacity.score;
 
-    const explanation = `Recommended: ${employee.name} (${employee.employee_id}). ${skillMatch.detail}, currently has ${workload.detail.toLowerCase()}, is available at ${employee.location || 'their location'}, and ${priorityCapacity.detail.toLowerCase()}.`;
+    const explanation = `Recommended: ${employee.name} (${employee.employee_id}). ${skillMatch.detail}, ${workload.detail.toLowerCase()}, is available at ${employee.location || 'their location'}, and ${priorityCapacity.detail.toLowerCase()}.`;
 
     return {
       employee,

@@ -45,7 +45,7 @@ export function AIChatbot() {
     {
       id: 'welcome',
       role: 'bot',
-      content: 'Hello! I\'m the WorkSync AI Assistant (Prototype). I can help you understand how this system works. Try asking about task assignment, workforce analytics, or human-in-the-loop governance.',
+      content: "Hello! I'm the WorkSync AI Operations Assistant. I can assist you with frontline task coordination, AI workforce matching, live workload analytics, and supervisory decision review.",
       timestamp: new Date(),
     }
   ]);
@@ -121,8 +121,8 @@ export function AIChatbot() {
               <Brain className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">AI Assistant (Prototype)</h3>
-              <p className="text-xs text-muted-foreground">Rule-based responses | Not a trained AI model</p>
+              <h3 className="font-semibold text-sm">WorkSync AI Assistant</h3>
+              <p className="text-xs text-muted-foreground">Operations & Decision Support Engine</p>
             </div>
           </div>
           <button

@@ -10,6 +10,7 @@ import { cookies } from 'next/headers';
 // lifetime of the server process, which is fine for an academic prototype.
 
 type DemoState = {
+  version?: string;
   tasks: Task[];
   recommendations: AIRecommendation[];
   insights: AIInsight[];
@@ -17,17 +18,18 @@ type DemoState = {
   auditLogs: AuditLog[];
 };
 
+// Bump when seeding logic changes so dev-server hot reloads re-seed the store.
+const STORE_VERSION = 'v2';
+
 // Global so hot reloads / multiple module instances share one store
 const g = globalThis as any as { __worksyncDemoStore?: DemoState };
 
 function seedStore(): DemoState {
   const now = new Date().toISOString();
 
-  // Tasks from the deterministic demo dataset; drop the 'cancelled' ones so
-  // the workflow statuses stay within the six-state lifecycle.
-  const tasks: Task[] = demoTasks
-    .filter((t) => t.status !== ('cancelled' as any))
-    .map((t) => ({ ...t }));
+  // Tasks from the deterministic demo dataset. The dataset already uses the
+  // six-state workflow (assigned/accepted/in_progress/completed/verified/closed).
+  const tasks: Task[] = demoTasks.map((t) => ({ ...t }));
 
   const employees = getDemoEmployees() as Employee[];
 
@@ -90,11 +92,13 @@ export function mapCategory(category: string): string {
 }
 
 export function getDemoStore(): DemoState {
-  if (!g.__worksyncDemoStore) {
-    g.__worksyncDemoStore = seedStore();
+  if (!g.__worksyncDemoStore || g.__worksyncDemoStore.version !== STORE_VERSION) {
+    g.__worksyncDemoStore = { version: STORE_VERSION, ...seedStore() };
   }
   return g.__worksyncDemoStore;
 }
+
+
 
 /** Demo-mode identity of the logged-in role, from the demo-role cookie. */
 export async function getDemoActor(): Promise<{ id: string; name: string; role: string }> {

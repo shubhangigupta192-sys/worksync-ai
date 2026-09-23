@@ -60,18 +60,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     } else {
       // Demo mode — check for demo session cookie
       const cookieStore = await cookies();
-      const demoRole = cookieStore.get('demo-role')?.value;
+      const rawRole = cookieStore.get('demo-role')?.value || cookieStore.get('demo-session')?.value;
+      const demoRole = rawRole?.toLowerCase();
       if (demoRole && DEMO_PROFILES[demoRole]) {
         profile = DEMO_PROFILES[demoRole];
+      } else if (cookieStore.get('demo-session')?.value) {
+        profile = DEMO_PROFILES['admin'];
       }
     }
   } catch {
     // Check demo cookie as fallback
     try {
       const cookieStore = await cookies();
-      const demoRole = cookieStore.get('demo-role')?.value;
+      const rawRole = cookieStore.get('demo-role')?.value || cookieStore.get('demo-session')?.value;
+      const demoRole = rawRole?.toLowerCase();
       if (demoRole && DEMO_PROFILES[demoRole]) {
         profile = DEMO_PROFILES[demoRole];
+      } else if (cookieStore.get('demo-session')?.value) {
+        profile = DEMO_PROFILES['admin'];
       }
     } catch {
       // No profile available

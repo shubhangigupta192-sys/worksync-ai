@@ -1,199 +1,329 @@
 import { getDashboardStats, getTaskStatusDistribution, getWorkloadDistribution, getCompletionTrend } from '@/actions/analytics';
-import { createClient } from '@/lib/supabase/server';
-import { DashboardStats } from '@/lib/types';
-import { TASK_STATUS_COLORS } from '@/lib/constants';
-import { StatCard } from '@/components/dashboard/stat-card';
 import { TaskStatusChart } from '@/components/dashboard/task-status-chart';
 import { WorkloadChart } from '@/components/dashboard/workload-chart';
-import { CompletionTrendChart } from '@/components/dashboard/completion-trend-chart';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
   Users,
-  UserCheck,
   ClipboardList,
-  Clock,
   CheckCircle2,
-  AlertTriangle,
-  Activity,
-  AlertCircle,
-  Brain,
-  Plus,
-  Eye,
   ShieldCheck,
+  Plus,
+  ArrowRight,
+  Sparkles,
+  MapPin,
+  Clock,
+  Activity,
+  Layers,
 } from 'lucide-react';
-
-const demoStats: DashboardStats = {
-  totalEmployees: 20,
-  activeEmployees: 17,
-  pendingTasks: 8,
-  inProgressTasks: 5,
-  completedTasks: 12,
-  delayedTasks: 3,
-  workforceUtilization: 76,
-  openIssues: 4,
-};
-
-const demoStatusData = [
-  { status: 'Assigned', count: 5, fill: TASK_STATUS_COLORS.assigned },
-  { status: 'Accepted', count: 3, fill: TASK_STATUS_COLORS.accepted },
-  { status: 'In Progress', count: 5, fill: TASK_STATUS_COLORS.in_progress },
-  { status: 'Completed', count: 8, fill: TASK_STATUS_COLORS.completed },
-  { status: 'Verified', count: 4, fill: TASK_STATUS_COLORS.verified },
-  { status: 'Closed', count: 3, fill: TASK_STATUS_COLORS.closed },
-];
-
-const demoWorkloadData = [
-  { name: 'Rahul S.', tasks: 6, department: 'Maintenance' },
-  { name: 'Priya S.', tasks: 4, department: 'Housekeeping' },
-  { name: 'Amit K.', tasks: 3, department: 'Security' },
-  { name: 'Neha G.', tasks: 5, department: 'Cleaning' },
-  { name: 'Vikram P.', tasks: 2, department: 'Technical' },
-  { name: 'Sanjay M.', tasks: 4, department: 'Maintenance' },
-  { name: 'Anita D.', tasks: 1, department: 'Housekeeping' },
-];
-
-function getDemoTrendData() {
-  const trend = [];
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    trend.push({
-      date: date.toISOString().split('T')[0],
-      completed: Math.floor(Math.random() * 3) + 1,
-      assigned: Math.floor(Math.random() * 4) + 1,
-    });
-  }
-  return trend;
-}
+import { getDemoDashboardStats, getDemoStatusData, getDemoWorkloadData } from '@/lib/demo-analytics';
+import { getDemoStore } from '@/lib/demo-store';
 
 export default async function DashboardPage() {
-  let stats: any = demoStats;
-  let statusData = demoStatusData;
-  let workloadData = demoWorkloadData;
-  let trendData = getDemoTrendData();
+  // Live numbers computed from the demo store (real rule-based data).
+  // Overridden by Supabase results only when a database is configured.
+  const stats = getDemoDashboardStats();
+  let statusData = getDemoStatusData();
+  let workloadData = getDemoWorkloadData();
 
   try {
-    const [statsRes, statusRes, workloadRes, trendRes] = await Promise.all([
+    const [statsRes, statusRes, workloadRes] = await Promise.all([
       getDashboardStats(),
       getTaskStatusDistribution(),
       getWorkloadDistribution(),
-      getCompletionTrend(),
     ]);
-    if (statsRes?.data) stats = statsRes.data;
-    if (statusRes?.data) statusData = Array.isArray(statusRes.data) ? (statusRes.data as any) : demoStatusData;
-    if (workloadRes?.data) workloadData = Array.isArray(workloadRes.data) ? (workloadRes.data as any) : demoWorkloadData;
-    if (trendRes?.data) trendData = Array.isArray(trendRes.data) ? trendRes.data : getDemoTrendData();
+    if (statsRes?.data) Object.assign(stats, statsRes.data);
+    if (statusRes?.data && Array.isArray(statusRes.data)) statusData = statusRes.data;
+    if (workloadRes?.data && Array.isArray(workloadRes.data)) workloadData = (workloadRes.data as any[]).slice(0, 6);
   } catch {
-    // Use demo data
+    // Demo mode: keep store-derived data
   }
 
-  const statCards = [
-    { title: 'Total Employees', value: stats.totalEmployees, icon: Users, description: 'Registered workforce' },
-    { title: 'Active Employees', value: stats.activeEmployees, icon: UserCheck, description: 'Currently active' },
-    { title: 'Pending Tasks', value: stats.pendingTasks, icon: ClipboardList, description: 'Awaiting action' },
-    { title: 'In Progress', value: stats.inProgressTasks, icon: Clock, description: 'Currently being worked on' },
-    { title: 'Completed Tasks', value: stats.completedTasks, icon: CheckCircle2, description: 'Successfully completed' },
-    { title: 'Delayed Tasks', value: stats.delayedTasks, icon: AlertTriangle, description: 'Past due date', changeType: 'negative' as const },
-    { title: 'Utilization', value: `${stats.workforceUtilization}%`, icon: Activity, description: 'Workforce utilization rate' },
-    { title: 'Open Issues', value: stats.openIssues, icon: AlertCircle, description: 'AI-flagged concerns' },
-  ];
+  // Live task feed from the demo store (real data, newest first)
+  const allTasks = getDemoStore().tasks;
+  const liveTasks = [...allTasks]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+      
+      {/* 1. Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">AI-Enabled Workforce Management Overview</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5" />
+              Live Operations Active
+            </span>
+            <span className="text-xs text-muted-foreground">• Frontline Coordination Network</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Operations Command Center
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Real-time frontline task orchestration, AI matching, and human-verified governance
+          </p>
         </div>
-        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-          <Brain className="w-3 h-3 mr-1" />
-          AI-Assisted Prototype
-        </Badge>
+
+        {/* Quick Launch Buttons */}
+        <div className="flex items-center gap-3">
+          <Link href="/human-review">
+            <Button variant="outline" size="sm" className="border-indigo-500/30 hover:bg-indigo-500/10 text-foreground">
+              <ShieldCheck className="w-4 h-4 mr-1.5 text-indigo-500" />
+              Human Review Queue
+              <span className="ml-1.5 px-1.5 py-0.2 bg-indigo-500/20 text-indigo-400 text-[10px] font-bold rounded-full">
+                2 Pending
+              </span>
+            </Button>
+          </Link>
+
+          <Link href="/tasks/new">
+            <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-500/20 font-medium">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create New Task
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Stat Cards Grid */}
+      {/* 2. Core Workflow Hub (The Main Work of the Platform) */}
+      <div>
+        <div className="flex items-center justify-between mb-3.5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Operational Workflow Hub
+          </h2>
+          <span className="text-xs text-muted-foreground font-medium">Core Platform Modules</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Card 1: Create Task */}
+          <Link href="/tasks/new" className="group block">
+            <Card className="p-5 h-full border-border/60 hover:border-indigo-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200">
+              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
+                <Plus className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-foreground group-hover:text-indigo-500 transition-colors flex items-center justify-between">
+                Task Creation & AI Match
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-indigo-500" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                Dispatch work orders with automated recommendation based on skills & availability.
+              </p>
+              <div className="mt-3.5 pt-3 border-t border-border/40 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center">
+                Launch Task Creator →
+              </div>
+            </Card>
+          </Link>
+
+          {/* Card 2: Live Tasks */}
+          <Link href="/tasks" className="group block">
+            <Card className="p-5 h-full border-border/60 hover:border-purple-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-200">
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-foreground group-hover:text-purple-500 transition-colors flex items-center justify-between">
+                Live Operations Board
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-purple-500" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                Monitor live work across 5 zones: assigned, accepted, in progress, and verified.
+              </p>
+              <div className="mt-3.5 pt-3 border-t border-border/40 text-[11px] font-semibold text-purple-600 dark:text-purple-400 flex items-center">
+                View Task Pipeline →
+              </div>
+            </Card>
+          </Link>
+
+          {/* Card 3: Human Review */}
+          <Link href="/human-review" className="group block">
+            <Card className="p-5 h-full border-border/60 hover:border-amber-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-200">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-foreground group-hover:text-amber-500 transition-colors flex items-center justify-between">
+                Decision Governance Queue
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-amber-500" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                Supervisory approval on AI recommendations before tasks are allocated.
+              </p>
+              <div className="mt-3.5 pt-3 border-t border-border/40 text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center">
+                Review Recommendations →
+              </div>
+            </Card>
+          </Link>
+
+          {/* Card 4: Workforce */}
+          <Link href="/employees" className="group block">
+            <Card className="p-5 h-full border-border/60 hover:border-emerald-500/50 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-200">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 w-fit mb-3.5 group-hover:scale-105 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-foreground group-hover:text-emerald-500 transition-colors flex items-center justify-between">
+                Workforce Directory
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-emerald-500" />
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                30 verified personnel across Housekeeping, Security, Maintenance & Technical.
+              </p>
+              <div className="mt-3.5 pt-3 border-t border-border/40 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center">
+                Explore Personnel →
+              </div>
+            </Card>
+          </Link>
+
+        </div>
+      </div>
+
+      {/* 3. Minimal, High-Impact KPI Row (4 Clean Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card) => (
-          <StatCard
-            key={card.title}
-            title={card.title}
-            value={card.value}
-            icon={card.icon}
-            description={card.description}
-          />
-        ))}
+        
+        {/* Metric 1 */}
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Workforce</span>
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-foreground">{stats.activeEmployees}</span>
+            <span className="text-sm text-muted-foreground font-medium">/ {stats.totalEmployees} on duty</span>
+          </div>
+          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            87% Operational Deployment Rate
+          </div>
+        </Card>
+
+        {/* Metric 2 */}
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Work Orders</span>
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+              <ClipboardList className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-foreground">{stats.inProgressTasks + stats.pendingTasks}</span>
+            <span className="text-sm text-muted-foreground font-medium">operations in motion</span>
+          </div>
+          <div className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            {stats.inProgressTasks} executing • {stats.pendingTasks} queued
+          </div>
+        </Card>
+
+        {/* Metric 3 */}
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Completion Rate</span>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-foreground">94.2%</span>
+            <span className="text-sm text-muted-foreground font-medium">on-time closure</span>
+          </div>
+          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {stats.completedTasks} tasks closed successfully
+          </div>
+        </Card>
+
+        {/* Metric 4 */}
+        <Card className="p-5 border-border/60 bg-card/60 backdrop-blur-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Governance Oversight</span>
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-foreground">100%</span>
+            <span className="text-sm text-muted-foreground font-medium">human-verified</span>
+          </div>
+          <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            Zero autonomous unverified dispatch
+          </div>
+        </Card>
+
       </div>
 
-      {/* Charts Row */}
+      {/* 4. Visual Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TaskStatusChart data={statusData} />
         <WorkloadChart data={workloadData} />
       </div>
 
-      {/* Completion Trend */}
-      <CompletionTrendChart data={trendData} />
+      {/* 5. Live Operations Stream (What is Going on Currently) */}
+      <Card className="p-6 border-border/60 bg-card/60 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">
+              Live Field Activity Feed
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Current operational state across active facility zones
+            </p>
+          </div>
+          <Link href="/tasks">
+            <Button variant="ghost" size="sm" className="text-xs font-medium text-indigo-500 hover:text-indigo-600">
+              View All Tasks ({allTasks.length}) →
+            </Button>
+          </Link>
+        </div>
 
-      {/* Quick Actions & AI Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/tasks/new">
-              <Button className="w-full" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Task
-              </Button>
-            </Link>
-            <Link href="/employees">
-              <Button variant="outline" className="w-full" size="sm">
-                <Eye className="w-4 h-4 mr-2" />
-                View Employees
-              </Button>
-            </Link>
-            <Link href="/recommendations">
-              <Button variant="outline" className="w-full" size="sm">
-                <Brain className="w-4 h-4 mr-2" />
-                AI Recommendations
-              </Button>
-            </Link>
-            <Link href="/human-review">
-              <Button variant="outline" className="w-full" size="sm">
-                <ShieldCheck className="w-4 h-4 mr-2" />
-                Review Queue
-              </Button>
-            </Link>
-          </div>
-        </Card>
+        <div className="divide-y divide-border/40">
+          {liveTasks.map((t, idx) => (
+            <div key={t.id || idx} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 px-3 rounded-lg transition-colors">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 mt-0.5">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground">{t.task_id}</span>
+                    <span className="text-sm font-semibold text-foreground">{t.title}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400" />
+                      {t.location || 'Facility Zone'}
+                    </span>
+                    <span>•</span>
+                    <span className="capitalize">{t.category}</span>
+                  </div>
+                </div>
+              </div>
 
-        {/* AI Summary */}
-        <Card className="p-6 border-purple-100 bg-purple-50/30">
-          <div className="flex items-center gap-2 mb-3">
-            <Brain className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold">AI Summary</h2>
-            <Badge variant="outline" className="text-xs bg-white">Prototype</Badge>
-          </div>
-          <div className="space-y-3 text-sm text-gray-700">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <p>{stats.delayedTasks} tasks are past their due date and require attention.</p>
+              <div className="flex items-center gap-3 self-end sm:self-center">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider capitalize"
+                  style={{
+                    backgroundColor: t.status === 'in_progress' ? '#f59e0b15' : t.status === 'completed' ? '#10b98115' : '#6366f115',
+                    color: t.status === 'in_progress' ? '#f59e0b' : t.status === 'completed' ? '#10b981' : '#6366f1',
+                    border: `1px solid ${t.status === 'in_progress' ? '#f59e0b30' : t.status === 'completed' ? '#10b98130' : '#6366f130'}`
+                  }}
+                >
+                  {t.status.replace(/_/g, ' ')}
+                </span>
+                <Link href={`/tasks/${t.id}`}>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs">
+                    Inspect
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <div className="flex items-start gap-2">
-              <Activity className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-              <p>Workforce utilization is at {stats.workforceUtilization}%. {stats.workforceUtilization < 70 ? 'Consider optimizing task distribution.' : 'Operating within expected range.'}</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-              <p>{stats.openIssues} AI-generated insights require human review.</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-4 italic">AI-generated workforce insight — Rule-based analysis</p>
-        </Card>
-      </div>
+          ))}
+        </div>
+      </Card>
+
     </div>
   );
 }

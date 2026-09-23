@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export default async function Home() {
   try {
@@ -12,5 +13,12 @@ export default async function Home() {
   } catch {
     // Demo mode
   }
-  redirect('/dashboard');
+
+  const cookieStore = await cookies();
+  const demoSession = cookieStore.get('demo-session')?.value;
+  if (demoSession) {
+    redirect('/dashboard');
+  } else {
+    redirect('/login');
+  }
 }

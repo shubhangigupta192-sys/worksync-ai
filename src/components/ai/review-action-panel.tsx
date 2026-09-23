@@ -118,7 +118,7 @@ export function ReviewActionPanel({ recommendation, employeeName, canReview }: R
           })}
         </div>
 
-        <ModifyPicker onModify={(id, name, reason) => act('modify', reason, id, name)} disabled={busy} />
+        <ModifyPicker selectId={`modify-select-${recommendation.id}`} onModify={(id, name, reason) => act('modify', reason, id, name)} disabled={busy} />
 
         <div className="pt-1">
           <DecisionActionButtons
@@ -142,7 +142,7 @@ export function ReviewActionPanel({ recommendation, employeeName, canReview }: R
   );
 }
 
-function ModifyPicker({ onModify, disabled }: { onModify: (id: string, name: string, reason: string) => void; disabled: boolean }) {
+function ModifyPicker({ selectId, onModify, disabled }: { selectId: string; onModify: (id: string, name: string, reason: string) => void; disabled: boolean }) {
   const [employees, setEmployees] = useState<{ id: string; name: string }[] | null>(null);
   const [reason, setReason] = useState('');
 
@@ -163,7 +163,7 @@ function ModifyPicker({ onModify, disabled }: { onModify: (id: string, name: str
       </label>
       <div className="flex flex-col sm:flex-row gap-2">
         <select
-          id="modify-select"
+          id={selectId}
           className="flex h-9 w-full sm:w-64 rounded-md border border-slate-200 bg-white px-2 text-xs"
           defaultValue=""
           onFocus={load}
@@ -185,7 +185,7 @@ function ModifyPicker({ onModify, disabled }: { onModify: (id: string, name: str
         type="button"
         disabled={disabled}
         onClick={() => {
-          const select = document.getElementById('modify-select') as HTMLSelectElement | null;
+          const select = document.getElementById(selectId) as HTMLSelectElement | null;
           if (select && select.value && reason.trim()) onModify(select.value, select.options[select.selectedIndex]?.text || '', reason);
         }}
         className="mt-2 rounded-md border border-slate-200 px-2 py-1 hover:bg-gray-50 disabled:opacity-50"
