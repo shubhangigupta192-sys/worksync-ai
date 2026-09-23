@@ -6,35 +6,39 @@ import { revalidatePath } from 'next/cache';
 
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
+  if (!supabase) return { error: 'Database not configured. Use demo login.' };
+
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
   };
   const { error } = await supabase.auth.signInWithPassword(data);
-  if (error) {
-    return { error: error.message };
-  }
+  if (error) return { error: error.message };
+
   revalidatePath('/', 'layout');
   redirect('/dashboard');
 }
 
 export async function signOut() {
   const supabase = await createClient();
+  if (!supabase) redirect('/login');
   await supabase.auth.signOut();
   redirect('/login');
 }
 
 export async function getCurrentUser() {
   const supabase = await createClient();
+  if (!supabase) return null;
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
-  
+
   return profile;
 }
 

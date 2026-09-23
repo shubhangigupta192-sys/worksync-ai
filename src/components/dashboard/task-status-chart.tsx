@@ -32,7 +32,7 @@ export function TaskStatusChart({ data }: TaskStatusChartProps) {
                   paddingAngle={5}
                   dataKey="count"
                   nameKey="status"
-                  label={({ name, percent }) => `${name.replace('_', ' ')} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent }: { name?: string, percent?: number }) => `${(name || '').replace('_', ' ')} (${((percent || 0) * 100).toFixed(0)}%)`}
                   labelLine={false}
                 >
                   {chartData.map((entry, index) => (
@@ -43,7 +43,7 @@ export function TaskStatusChart({ data }: TaskStatusChartProps) {
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number, name: string) => [value, name.replace('_', ' ')]}
+                  formatter={(value: any, name: any) => [value, (name as string || '').replace('_', ' ')]}
                   contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0' }}
                 />
                 <Legend 

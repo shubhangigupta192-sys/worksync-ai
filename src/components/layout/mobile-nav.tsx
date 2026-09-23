@@ -46,11 +46,9 @@ export function MobileNav({ role, currentPath }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-900">
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Toggle navigation menu</span>
-        </Button>
+      <SheetTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white hover:bg-slate-100 hover:text-slate-900 h-10 w-10 text-slate-500">
+        <Menu className="h-6 w-6" />
+        <span className="sr-only">Toggle navigation menu</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0 flex flex-col bg-white border-r border-slate-200">
         <div className="p-6 border-b border-slate-200 flex items-center space-x-3">
@@ -58,7 +56,7 @@ export function MobileNav({ role, currentPath }: MobileNavProps) {
             <Brain className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight text-slate-900">AI-HR Prototype</h1>
+            <h1 className="font-bold text-lg leading-tight text-slate-900">WorkSync AI</h1>
             <p className="text-xs text-slate-500">AI-Enabled Workforce</p>
           </div>
         </div>

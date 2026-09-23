@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { logAudit } from './audit';
 import { getCurrentUser } from './auth';
 
 export async function logAudit(
@@ -13,6 +12,8 @@ export async function logAudit(
 ) {
   try {
     const supabase = await createClient();
+    if (!supabase) return; // Skip audit in demo mode
+
     const currentUser = await getCurrentUser();
     const userId = currentUser?.id;
 
@@ -42,6 +43,8 @@ export async function getAuditLogs(filters?: {
 }) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { data: [] };
+
     let query = supabase
       .from('audit_logs')
       .select('*, profile:profiles(*)')

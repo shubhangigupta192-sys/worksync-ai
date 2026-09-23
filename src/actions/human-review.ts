@@ -7,6 +7,7 @@ import { getCurrentUser } from './auth';
 export async function getPendingReviews() {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     
     const { data: recommendations, error: recError } = await supabase
       .from('recommendations')
@@ -30,6 +31,7 @@ export async function getPendingReviews() {
 export async function approveRecommendation(id: string, reason?: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
@@ -59,6 +61,7 @@ export async function approveRecommendation(id: string, reason?: string) {
 export async function rejectRecommendation(id: string, reason: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
@@ -88,6 +91,7 @@ export async function rejectRecommendation(id: string, reason: string) {
 export async function modifyRecommendation(id: string, modifications: string, reason?: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
@@ -118,6 +122,7 @@ export async function modifyRecommendation(id: string, modifications: string, re
 export async function acknowledgeInsight(id: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
@@ -147,6 +152,7 @@ export async function acknowledgeInsight(id: string) {
 export async function getDecisionHistory() {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const { data, error } = await supabase
       .from('human_decisions')
       .select('*, profile:profiles(*)')

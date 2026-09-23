@@ -12,57 +12,47 @@ interface StatCardProps {
   description?: string;
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  change, 
+export function StatCard({
+  title,
+  value,
+  icon: Icon,
+  change,
   changeType = 'neutral',
-  description 
+  description,
 }: StatCardProps) {
-  
-  const getChangeIcon = () => {
-    switch (changeType) {
-      case 'positive': return <ArrowUpRight className="w-3 h-3 mr-1" />;
-      case 'negative': return <ArrowDownRight className="w-3 h-3 mr-1" />;
-      default: return <Minus className="w-3 h-3 mr-1" />;
-    }
-  };
-
-  const getChangeColorClass = () => {
-    switch (changeType) {
-      case 'positive': return 'text-emerald-600 bg-emerald-50';
-      case 'negative': return 'text-rose-600 bg-rose-50';
-      default: return 'text-slate-600 bg-slate-50';
-    }
-  };
-
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-500">{title}</p>
-            <div className="flex items-baseline space-x-2">
-              <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
-            </div>
-            
+    <Card className="group overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border-border/60">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+            <h3 className="text-2xl font-bold text-foreground">{value}</h3>
+
             {(change || description) && (
-              <div className="flex items-center mt-2 space-x-2">
+              <div className="flex items-center gap-2 mt-1">
                 {change && (
-                  <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium", getChangeColorClass())}>
-                    {getChangeIcon()}
+                  <span
+                    className={cn(
+                      'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium',
+                      changeType === 'positive' && 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30',
+                      changeType === 'negative' && 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30',
+                      changeType === 'neutral' && 'text-muted-foreground bg-muted'
+                    )}
+                  >
+                    {changeType === 'positive' && <ArrowUpRight className="w-3 h-3 mr-0.5" />}
+                    {changeType === 'negative' && <ArrowDownRight className="w-3 h-3 mr-0.5" />}
+                    {changeType === 'neutral' && <Minus className="w-3 h-3 mr-0.5" />}
                     {change}
                   </span>
                 )}
                 {description && (
-                  <span className="text-xs text-slate-500">{description}</span>
+                  <span className="text-xs text-muted-foreground">{description}</span>
                 )}
               </div>
             )}
           </div>
-          <div className="p-3 bg-primary/5 rounded-full">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+            <Icon className="w-5 h-5 text-primary" />
           </div>
         </div>
       </CardContent>

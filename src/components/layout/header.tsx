@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Menu, LogOut, BrainCircuit } from 'lucide-react';
+import { LogOut, BrainCircuit, Bell } from 'lucide-react';
 import { Profile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MobileNav } from './mobile-nav';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { getGreeting } from '@/lib/utils';
 
 interface HeaderProps {
   user: Profile;
@@ -15,53 +16,66 @@ interface HeaderProps {
 
 export function Header({ user, pageTitle }: HeaderProps) {
   const handleLogout = () => {
-    // Logout logic
-    console.log('Logout clicked');
+    // Clear demo cookies and redirect to login
+    document.cookie = 'demo-session=; path=/; max-age=0';
+    document.cookie = 'demo-role=; path=/; max-age=0';
+    window.location.href = '/login';
   };
 
-  const initials = user.name
+  const initials = user.full_name
     .split(' ')
-    .map(n => n[0])
+    .map((n: string) => n[0])
     .join('')
-    .toUpperCase();
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
-      <div className="flex items-center">
-        <div className="md:hidden mr-4">
-          <MobileNav role={user.role} currentPath="/" />
+    <header className="h-16 border-b border-border bg-card/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30">
+      <div className="flex items-center gap-4">
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground">{getGreeting()}</h2>
+          <p className="text-base font-semibold text-foreground">{user.full_name}</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <h2 className="text-xl font-semibold text-slate-800">{pageTitle}</h2>
-          <Badge variant="secondary" className="hidden sm:flex items-center bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-            <BrainCircuit className="w-3 h-3 mr-1" />
-            AI-Assisted
-          </Badge>
-        </div>
+        <Badge variant="secondary" className="hidden sm:flex items-center gap-1 text-xs">
+          <BrainCircuit className="w-3 h-3" />
+          AI-Assisted Prototype
+        </Badge>
       </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="hidden sm:flex flex-col items-end mr-2">
-          <span className="text-sm font-medium text-slate-900">{user.name}</span>
-          <span className="text-xs text-slate-500 capitalize">{user.role.replace('_', ' ')}</span>
-        </div>
-        
-        <Avatar className="h-9 w-9 border border-slate-200">
-          <AvatarImage src="" alt={user.name} />
-          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={handleLogout}
-          className="text-slate-500 hover:text-slate-900 ml-2"
-          title="Logout"
-        >
-          <LogOut className="w-5 h-5" />
+      <div className="flex items-center gap-2">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="w-4.5 h-4.5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
         </Button>
+
+        {/* User Avatar */}
+        <div className="flex items-center gap-3 ml-2 pl-3 border-l border-border">
+          <Avatar className="h-8 w-8 border-2 border-primary/20">
+            <AvatarImage src="" alt={user.full_name} />
+            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="hidden md:flex flex-col">
+            <span className="text-sm font-medium leading-tight">{user.full_name}</span>
+            <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-destructive ml-1"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </header>
   );

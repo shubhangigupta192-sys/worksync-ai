@@ -1,32 +1,48 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { Employee, Task, DashboardStats } from '@/lib/types';
 import * as analyticsEngine from '@/lib/ai/analytics-engine';
+
+const DEMO_STATS: DashboardStats = {
+  totalEmployees: 30,
+  activeEmployees: 26,
+  pendingTasks: 10,
+  inProgressTasks: 8,
+  completedTasks: 15,
+  delayedTasks: 4,
+  workforceUtilization: 78,
+  openIssues: 5,
+};
 
 export async function getDashboardStats() {
   try {
     const supabase = await createClient();
-    const { count: employeeCount } = await supabase.from('employees').select('*', { count: 'exact', head: true });
-    const { count: taskCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
-    const { count: pendingReviews } = await supabase.from('human_decisions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    if (!supabase) return { data: DEMO_STATS };
 
-    return { data: { employees: employeeCount || 0, tasks: taskCount || 0, pendingReviews: pendingReviews || 0 } };
-  } catch (err: any) {
-    return { error: err.message };
+    const { data: employees } = await supabase
+      .from('employees')
+      .select('*, department:departments(*)');
+    const { data: tasks } = await supabase.from('tasks').select('*');
+
+    if (!employees || !tasks) return { data: DEMO_STATS };
+
+    const stats = analyticsEngine.calculateDashboardStats(employees, tasks);
+    return { data: stats };
+  } catch {
+    return { data: DEMO_STATS };
   }
 }
 
 export async function getTaskStatusDistribution() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('tasks').select('status');
-    if (error) return { error: error.message };
-    
-    const distribution = data.reduce((acc: any, task: any) => {
-      acc[task.status] = (acc[task.status] || 0) + 1;
-      return acc;
-    }, {});
-    
+    if (!supabase) return { data: null };
+
+    const { data: tasks, error } = await supabase.from('tasks').select('status');
+    if (error || !tasks) return { data: null };
+
+    const distribution = analyticsEngine.getTaskStatusDistribution(tasks as Task[]);
     return { data: distribution };
   } catch (err: any) {
     return { error: err.message };
@@ -36,16 +52,17 @@ export async function getTaskStatusDistribution() {
 export async function getWorkloadDistribution() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('tasks').select('assigned_to, employee:employees(first_name, last_name)').not('assigned_to', 'is', null).in('status', ['assigned', 'accepted', 'in_progress']);
-    if (error) return { error: error.message };
-    
-    const distribution = data.reduce((acc: any, task: any) => {
-      const name = `${task.employee?.first_name} ${task.employee?.last_name}`;
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {});
-    
-    return { data: distribution };
+    if (!supabase) return { data: null };
+
+    const { data: employees } = await supabase
+      .from('employees')
+      .select('*, department:departments(*)');
+    const { data: tasks } = await supabase.from('tasks').select('*');
+
+    if (!employees || !tasks) return { data: null };
+
+    const workload = analyticsEngine.getWorkloadByEmployee(employees, tasks as Task[]);
+    return { data: workload };
   } catch (err: any) {
     return { error: err.message };
   }
@@ -54,15 +71,12 @@ export async function getWorkloadDistribution() {
 export async function getCompletionTrend() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('tasks').select('completed_at').eq('status', 'completed');
-    if (error) return { error: error.message };
-    // Basic aggregation by date
-    const trend = data.reduce((acc: any, task: any) => {
-      if (!task.completed_at) return acc;
-      const date = new Date(task.completed_at).toISOString().split('T')[0];
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {});
+    if (!supabase) return { data: null };
+
+    const { data: tasks } = await supabase.from('tasks').select('*');
+    if (!tasks) return { data: null };
+
+    const trend = analyticsEngine.getCompletionTrend(tasks as Task[]);
     return { data: trend };
   } catch (err: any) {
     return { error: err.message };
@@ -72,9 +86,15 @@ export async function getCompletionTrend() {
 export async function getWorkforceInsights() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('ai_insights').select('*').order('created_at', { ascending: false }).limit(10);
+    if (!supabase) return { data: null };
+
+    const { data: insights, error } = await supabase
+      .from('ai_insights')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
     if (error) return { error: error.message };
-    return { data };
+    return { data: insights };
   } catch (err: any) {
     return { error: err.message };
   }
@@ -83,25 +103,36 @@ export async function getWorkforceInsights() {
 export async function regenerateInsights() {
   try {
     const supabase = await createClient();
-    const { data: employees } = await supabase.from('employees').select('*, tasks(*)');
-    
-    if (!employees) return { error: 'No data to analyze' };
+    if (!supabase) return { error: 'Database not configured' };
 
-    const insights = await analyticsEngine.generateWorkforceInsights(employees);
-    
+    const { data: employees } = await supabase
+      .from('employees')
+      .select('*, department:departments(*)');
+    const { data: tasks } = await supabase.from('tasks').select('*');
+
+    if (!employees || !tasks) return { error: 'No data to analyze' };
+
+    const insights = analyticsEngine.generateWorkforceInsights(
+      employees as Employee[],
+      tasks as Task[]
+    );
+
     if (insights && insights.length > 0) {
       for (const insight of insights) {
         await supabase.from('ai_insights').insert({
-          type: insight.type,
+          category: insight.category,
           title: insight.title,
           description: insight.description,
           severity: insight.severity,
-          status: 'active'
+          data_factors: insight.dataFactors,
+          affected_employees: insight.affectedEmployeeIds,
+          affected_tasks: insight.affectedTaskIds,
+          status: 'active',
         });
       }
     }
-    
-    return { data: { success: true } };
+
+    return { data: { success: true, count: insights.length } };
   } catch (err: any) {
     return { error: err.message };
   }

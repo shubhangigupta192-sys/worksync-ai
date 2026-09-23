@@ -7,6 +7,7 @@ import { getCurrentUser, getUserRole } from './auth';
 export async function getTasks(filters?: {status?: string, priority?: string, category?: string, assignedTo?: string, createdBy?: string}) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     let query = supabase
       .from('tasks')
       .select('*, employee:employees(*), creator:profiles!created_by(*)');
@@ -28,6 +29,7 @@ export async function getTasks(filters?: {status?: string, priority?: string, ca
 export async function getTask(id: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const { data, error } = await supabase
       .from('tasks')
       .select('*, employee:employees(*), creator:profiles!created_by(*), task_updates(*)')
@@ -44,6 +46,7 @@ export async function getTask(id: string) {
 export async function createTask(taskData: any) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const dataToInsert = {
@@ -69,6 +72,7 @@ export async function createTask(taskData: any) {
 export async function updateTaskStatus(taskId: string, newStatus: string, notes?: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     const role = await getUserRole();
     
@@ -115,6 +119,7 @@ export async function updateTaskStatus(taskId: string, newStatus: string, notes?
 export async function assignTask(taskId: string, employeeId: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const { data, error } = await supabase
       .from('tasks')
       .update({ assigned_to: employeeId, status: 'assigned' })
@@ -133,6 +138,7 @@ export async function assignTask(taskId: string, employeeId: string) {
 export async function verifyTask(taskId: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
@@ -161,6 +167,7 @@ export async function getMyTasks(employeeId: string) {
 export async function completeTask(taskId: string, notes: string, evidenceUrl?: string) {
   try {
     const supabase = await createClient();
+    if (!supabase) return { error: 'Database not configured' };
     const user = await getCurrentUser();
     
     const { data, error } = await supabase
