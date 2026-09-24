@@ -21,7 +21,7 @@ export function AppShell({ role, user, children }: AppShellProps) {
       <Sidebar role={role} open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
         <Header user={user} onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto overscroll-contain bg-background p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto overscroll-contain bg-background p-4 md:p-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {children}
         </main>
       </div>

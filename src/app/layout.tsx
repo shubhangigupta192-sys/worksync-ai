@@ -1,9 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Geist } from 'next/font/google';
 import './globals.css';
 import { createClient } from '@/lib/supabase/server';
 import { AppShell } from '@/components/layout/app-shell';
 import { ThemeProvider } from '@/components/theme-provider';
+import { PWARegistrar } from '@/components/pwa-registrar';
 import { AIChatbot } from '@/components/ai-chatbot';
 import { cn } from '@/lib/utils';
 import { Profile } from '@/lib/types';
@@ -15,6 +16,27 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'WorkSync AI | AI-Assisted Workforce Coordination',
   description: 'Academic research prototype for AI-assisted HR and workforce coordination',
+  manifest: '/manifest.json',
+  applicationName: 'WorkSync AI',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black',
+    title: 'WorkSync AI',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/icon-192.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#4f46e5',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 const DEMO_PROFILES: Record<string, Profile> = {
@@ -88,6 +110,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={cn('font-sans', geist.variable)} suppressHydrationWarning>
       <body className={cn(inter.className, 'antialiased')}>
+        <PWARegistrar />
         <ThemeProvider>
           {profile ? (
             <>
